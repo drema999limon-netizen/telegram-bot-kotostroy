@@ -146,4 +146,3 @@ def handle_all_messages(message):
             parse_mode="HTML",
             reply_markup=get_main_keyboard(),
         )
-        )
