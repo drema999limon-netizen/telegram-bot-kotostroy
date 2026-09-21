@@ -3,15 +3,16 @@ from flask import Flask, request
 import telebot
 from telebot import types
 
-# Vercel берет эти данные из настроек
-BOT_TOKEN = os.environ.get("BOT_TOKEN") or "8643961661:AAFo8pEOThsPy6YggIGRbkugD3rUKKrVS_E"
-ADMIN_ID = os.environ.get("ADMIN_ID") or "1254118806"
+# ==================== НАСТРОЙКИ ====================
+BOT_TOKEN = (
+    os.environ.get("BOT_TOKEN")
+    or "8643961661:AAFo8pEOThsPy6YggIGRbkugD3rUKKrVS_E"
+)
 
-if ADMIN_ID:
-    try:
-        ADMIN_ID = int(ADMIN_ID)
-    except ValueError:
-        pass
+# Вставьте сюда юзернейм вашего канала (ОБЯЗАТЕЛЬНО С СИМВОЛОМ @)
+# Пример: CHANNEL_ID = "@my_orders_channel"
+CHANNEL_ID = os.environ.get("CHANNEL_ID") or "@kotostroy_zayvki"
+# ===================================================
 
 bot = telebot.TeleBot(BOT_TOKEN, threaded=False)
 app = Flask(__name__)
@@ -98,16 +99,17 @@ def handle_text(message):
         full_text = user_info + text
 
         try:
-            bot.send_message(ADMIN_ID, full_text, parse_mode="HTML")
+            # Отправляем сообщение в КАНАЛ
+            bot.send_message(CHANNEL_ID, full_text, parse_mode="HTML")
             bot.send_message(
                 message.chat.id,
-                "✅ Спасибо! Ваша заявка успешно отправлена. Скоро с вами свяжутся.",
+                "✅ Спасибо! Ваша заявка успешно отправлена.",
                 reply_markup=get_main_keyboard(),
             )
         except Exception as e:
             bot.send_message(
                 message.chat.id,
-                "❌ Ошибка при отправке администратору.",
+                f"❌ Ошибка отправки в канал. Убедитесь, что бот добавлен в администраторы канала!\nОшибка: {e}",
                 reply_markup=get_main_keyboard(),
             )
     else:
