@@ -15,16 +15,15 @@ bot = telebot.TeleBot(BOT_TOKEN, threaded=False)
 app = Flask(__name__)
 
 
-# Главное меню с красивыми кнопками
+# Главное меню
 def get_main_keyboard():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    btn1 = types.KeyboardButton("👷 Нужно найти исполнителя")
-    btn2 = types.KeyboardButton("💼 Нужна работа / Подработка")
+    btn1 = types.KeyboardButton("👷 Нужны исполнители")
+    btn2 = types.KeyboardButton("💼 Нужна работа")
     markup.add(btn1, btn2)
     return markup
 
 
-# Маршрут для Vercel
 @app.route("/", defaults={"path": ""}, methods=["POST", "GET"])
 @app.route("/<path:path>", methods=["POST", "GET"])
 def catch_all(path):
@@ -44,7 +43,7 @@ def start(message):
     welcome_text = (
         f"👋 <b>Здравствуйте, {message.from_user.first_name}!</b>\n\n"
         f"Добро пожаловать в сервис поиска работы и исполнителей <b>Kotostroy</b>! 🏗✨\n\n"
-        f"Пожалуйста, выберите нужный раздел в меню ниже 👇"
+        f"Пожалуйста, выберите нужный вариант ниже 👇"
     )
     bot.send_message(
         message.chat.id,
@@ -54,56 +53,76 @@ def start(message):
     )
 
 
-# Кнопка: "Нужно найти исполнителя"
+# 1. Нажата кнопка поиска исполнителя (поддерживает ВСЕ варианты нажатия)
 @bot.message_handler(
     func=lambda m: m.text
-    in ["👷 Нужно найти исполнителя", "Нужны исполнители"]
+    in [
+        "👷 Нужны исполнители",
+        "Нужны исполнители",
+        "👷 Нужно найти исполнителя",
+        "Исполнители",
+    ]
 )
 def employer(message):
     template = (
         "📝 <b>Скопируйте текст ниже, заполните данные и отправьте в ответном сообщении:</b>\n\n"
         "<code>"
-        "✨ ЗАЯВКА: ИЩУ ИСПОЛНИТЕЛЯ ✨\n\n"
-        "🏙 1. Город: \n"
-        "👨‍🏭 2. Какой исполнитель нужен: \n"
-        "📅 3. Какого числа: \n"
-        "⏰ 4. В какое время: \n"
-        "⏳ 5. На какой срок: \n"
-        "🎯 6. Задачи: \n"
-        "📞 7. Ваш номер для связи: \n"
-        "👤 8. Как к вам обращаться: \n"
-        "ℹ️ 9. Дополнительная информация: "
+        "ЗАЯВКА: НУЖЕН ИСПОЛНИТЕЛЬ\n"
+        "1. Город: \n"
+        "2. Какой исполнитель нужен: \n"
+        "3. Какого числа: \n"
+        "4. В какое время: \n"
+        "5. На какой срок: \n"
+        "6. На какие задачи нужен исполнитель: \n"
+        "7. Ваш номер для связи: \n"
+        "8. Как к вам обращаться: \n"
+        "9. Дополнительная информация: "
         "</code>"
     )
-    bot.send_message(message.chat.id, template, parse_mode="HTML")
+    bot.send_message(
+        message.chat.id,
+        template,
+        parse_mode="HTML",
+        reply_markup=get_main_keyboard(),
+    )
 
 
-# Кнопка: "Нужна работа / Подработка"
+# 2. Нажата кнопка поиска работы
 @bot.message_handler(
-    func=lambda m: m.text in ["💼 Нужна работа / Подработка", "Нужна работа"]
+    func=lambda m: m.text
+    in [
+        "💼 Нужна работа",
+        "Нужна работа",
+        "💼 Нужна работа / Подработка",
+        "Работа",
+    ]
 )
 def worker(message):
     template = (
         "📝 <b>Скопируйте текст ниже, заполните данные и отправьте в ответном сообщении:</b>\n\n"
         "<code>"
-        "✨ АНКЕТА: ИЩУ РАБОТУ ✨\n\n"
-        "🏙 1. Город: \n"
-        "🛠 2. Какую работу можете выполнить: \n"
-        "📅 3. С какого числа можете начать: \n"
-        "⏰ 4. График работы: \n"
-        "💰 5. Желаемая зарплата: \n"
-        "🎓 6. Ваш опыт работы: \n"
-        "📞 7. Телефон для связи: \n"
-        "ℹ️ 8. Дополнительная информация: "
+        "АНКЕТА: НУЖНА РАБОТА\n"
+        "1. Город: \n"
+        "2. Какую работу можете выполнить: \n"
+        "3. С какого числа можете начать: \n"
+        "4. С каким графиком готовы работать: \n"
+        "5. Желаемая зарплата: \n"
+        "6. Какой опыт: \n"
+        "7. Ваш номер телефона для связи: \n"
+        "8. Дополнительная информация: "
         "</code>"
     )
-    bot.send_message(message.chat.id, template, parse_mode="HTML")
+    bot.send_message(
+        message.chat.id,
+        template,
+        parse_mode="HTML",
+        reply_markup=get_main_keyboard(),
+    )
 
 
-# Пересылка ЛЮБОГО сообщения от пользователя прямо в Канал
+# 3. Пересылка любого заполненного сообщения/заявки в Канал
 @bot.message_handler(func=lambda m: True)
 def handle_all_messages(message):
-    # Оформляем красивую шапку для сообщения в канале
     user_name = message.from_user.first_name or "Пользователь"
     user_username = (
         f"@{message.from_user.username}"
@@ -112,18 +131,18 @@ def handle_all_messages(message):
     )
 
     post_text = (
-        f"🔥 <b>НОВАЯ ЗАЯВКА / СООБЩЕНИЕ!</b> 🔥\n"
+        f"🔥 <b>НОВАЯ ЗАЯВКА В КАНАЛЕ!</b> 🔥\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n"
         f"👤 <b>Отправитель:</b> <a href='tg://user?id={message.from_user.id}'>{user_name}</a> ({user_username})\n"
         f"🆔 <b>ID:</b> <code>{message.from_user.id}</code>\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"{message.text}\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"📩 <i>Чтобы связаться, нажмите на имя отправителя выше или напишите ему в ЛС.</i>"
+        f"📩 <i>Чтобы связаться, нажмите на имя отправителя выше.</i>"
     )
 
     try:
-        # Отправляем сообщение в канал
+        # Публикуем в канал
         bot.send_message(
             CHANNEL_ID,
             post_text,
@@ -131,18 +150,17 @@ def handle_all_messages(message):
             disable_web_page_preview=True,
         )
 
-        # Отвечаем пользователю в боте
+        # Отвечаем пользователю
         bot.send_message(
             message.chat.id,
-            "🚀 <b>Отлично! Ваша заявка мгновенно опубликована в нашем канале!</b>\n\n"
-            "Скоро с вами свяжутся. Спасибо!",
+            "🚀 <b>Спасибо! Ваша заявка успешно отправлена в канал!</b>",
             parse_mode="HTML",
             reply_markup=get_main_keyboard(),
         )
     except Exception as e:
         bot.send_message(
             message.chat.id,
-            f"❌ <b>Ошибка публикации в канал!</b>\nУбедитесь, что бот является администратором канала @kotostroy_zayvki.\n\n<code>Детали: {e}</code>",
+            f"❌ <b>Ошибка отправки в канал!</b> Убедитесь, что бот является администратором канала @kotostroy_zayvki.\n\n<code>Детали: {e}</code>",
             parse_mode="HTML",
             reply_markup=get_main_keyboard(),
         )
