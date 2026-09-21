@@ -15,12 +15,9 @@ bot = telebot.TeleBot(BOT_TOKEN, threaded=False)
 app = Flask(__name__)
 
 
-# Главное меню
 def get_main_keyboard():
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    btn1 = types.KeyboardButton("👷 Нужны исполнители")
-    btn2 = types.KeyboardButton("💼 Нужна работа")
-    markup.add(btn1, btn2)
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.row("👔 Нужны исполнители", "🛠 Нужна работа")
     return markup
 
 
@@ -37,17 +34,14 @@ def catch_all(path):
     return "Bot is running!", 200
 
 
-# 1. Команда /start
 @bot.message_handler(commands=["start"])
 def start(message):
-    first_name = message.from_user.first_name or "пользователь"
-
+    user_name = message.from_user.first_name
     welcome_text = (
-        f"👋 Здравствуйте, {first_name} !\n\n"
-        f"Добро пожаловать в сервис поиска работы и исполнителей Kotostroy! 🏗✨\n\n"
+        f"👋 <b>Здравствуйте, {user_name}!</b>\n\n"
+        f"Добро пожаловать в сервис поиска работы и исполнителей <b>Kotostroy!</b> 🏗✨\n\n"
         f"Пожалуйста, выберите нужный вариант ниже 👇"
     )
-
     bot.send_message(
         message.chat.id,
         welcome_text,
@@ -56,107 +50,76 @@ def start(message):
     )
 
 
-# 2. Нажата кнопка поиска исполнителя
-@bot.message_handler(
-    func=lambda m: m.text
-    and ("исполнител" in m.text.lower())
-    and not ("ЗАЯВКА:" in m.text)
-)
+@bot.message_handler(func=lambda m: m.text in ["👔 Нужны исполнители", "Нужны исполнители"])
 def employer(message):
-    instruction = "📝 <b>Нажмите на текст ниже, чтобы скопировать его в 1 клик, заполните и отправьте ответным сообщением:</b>\n\n"
-
+    # ПЕРВОЕ СООБЩЕНИЕ (Инструкция)
+    instruction = "📝 <b>Нажмите на текст ниже, чтобы скопировать его в 1 клик, заполните и отправьте ответным сообщением:</b>"
+    bot.send_message(message.chat.id, instruction, parse_mode="HTML")
+    
+    # ВТОРОЕ СООБЩЕНИЕ (Шаблон для копирования без цифр)
     template = (
-        "<code>"
-        "ЗАЯВКА: НУЖЕН ИСПОЛНИТЕЛЬ\n"
-        "1. 📍 Адрес: \n"
-        "2. 👷 Какой исполнитель нужен: \n"
-        "3. 📅 Какого числа: \n"
-        "4. ⏰ В какое время: \n"
-        "5. ⏳ На какой срок: \n"
-        "6. 🛠 На какие задачи нужен исполнитель: \n"
-        "7. 📞 Ваш номер для связи: \n"
-        "8. 👤 Как к вам обращаться: \n"
-        "9. ℹ️ Дополнительная информация: "
-        "</code>"
+        "<code>💼 ЗАЯВКА: НУЖЕН ИСПОЛНИТЕЛЬ\n"
+        "📍 Адрес: \n"
+        "👷 Какой исполнитель нужен: \n"
+        "📅 Какого числа: \n"
+        "⏰ В какое время: \n"
+        "⏳ На какой срок: \n"
+        "📋 На какие задачи нужен исполнитель: \n"
+        "📞 Ваш номер телефона для связи: \n"
+        "👤 Как к вам обращаться: \n"
+        "ℹ️ Дополнительная информация: </code>"
     )
-
-    bot.send_message(
-        message.chat.id,
-        instruction + template,
-        parse_mode="HTML",
-        reply_markup=get_main_keyboard(),
-    )
+    bot.send_message(message.chat.id, template, parse_mode="HTML")
 
 
-# 3. Нажата кнопка поиска работы
-@bot.message_handler(
-    func=lambda m: m.text
-    and ("работ" in m.text.lower())
-    and not ("АНКЕТА:" in m.text)
-)
+@bot.message_handler(func=lambda m: m.text in ["🛠 Нужна работа", "Нужна работа"])
 def worker(message):
-    instruction = "📝 <b>Нажмите на текст ниже, чтобы скопировать его в 1 клик, заполните и отправьте ответным сообщением:</b>\n\n"
-
+    # ПЕРВОЕ СООБЩЕНИЕ (Инструкция)
+    instruction = "📝 <b>Нажмите на текст ниже, чтобы скопировать его в 1 клик, заполните и отправьте ответным сообщением:</b>"
+    bot.send_message(message.chat.id, instruction, parse_mode="HTML")
+    
+    # ВТОРОЕ СООБЩЕНИЕ (Шаблон для копирования без цифр)
     template = (
-        "<code>"
-        "АНКЕТА: НУЖНА РАБОТА\n"
-        "1. 📍 Адрес: \n"
-        "2. 🛠 Какую работу можете выполнить: \n"
-        "3. 📅 С какого числа можете начать: \n"
-        "4. ⏰ С каким графиком готовы работать: \n"
-        "5. 💰 Желаемая зарплата: \n"
-        "6. 🎓 Какой опыт: \n"
-        "7. 📞 Ваш номер телефона для связи: \n"
-        "8. ℹ️ Дополнительная информация: "
-        "</code>"
+        "<code>💼 АНКЕТА: НУЖНА РАБОТА\n"
+        "📍 Адрес: \n"
+        "🛠 Какую работу можете выполнить: \n"
+        "📅 С какого числа можете начать: \n"
+        "⏰ С каким графиком готовы работать: \n"
+        "💰 Желаемая зарплата: \n"
+        "🎓 Какой опыт: \n"
+        "📞 Ваш номер телефона для связи: \n"
+        "ℹ️ Дополнительная информация: </code>"
     )
-
-    bot.send_message(
-        message.chat.id,
-        instruction + template,
-        parse_mode="HTML",
-        reply_markup=get_main_keyboard(),
-    )
+    bot.send_message(message.chat.id, template, parse_mode="HTML")
 
 
-# 4. Обработка заполненной заявки и отправка в Канал
-@bot.message_handler(func=lambda m: True)
+@bot.message_handler(content_types=['text', 'photo', 'video', 'document', 'voice', 'audio'])
 def handle_all_messages(message):
-    user_name = message.from_user.first_name or "Пользователь"
-    user_username = (
-        f"@{message.from_user.username}"
-        if message.from_user.username
-        else "скрыт"
-    )
+    # Игнорируем нажатия кнопок, чтобы они не летели в канал
+    if message.text in ["👔 Нужны исполнители", "Нужны исполнители", "🛠 Нужна работа", "Нужна работа", "/start"]:
+        return
 
-    post_text = (
-        f"📢 <b>НОВАЯ ЗАЯВКА В KOTOSTROY</b>\n"
-        f"➖➖━━━━━━━━━━━━━━━━➖➖\n\n"
-        f"{message.text}\n\n"
-        f"➖➖━━━━━━━━━━━━━━━━➖➖\n"
-        f"👤 <b>Отправитель:</b> <a href='tg://user?id={message.from_user.id}'>{user_name}</a> ({user_username})\n"
-        f"💬 <b>Связаться:</b> нажмите на имя отправителя выше"
+    user_info = (
+        f"🔔 <b>НОВОЕ СООБЩЕНИЕ ИЗ БОТА</b> 🔔\n\n"
+        f"👤 <b>От кого:</b> @{message.from_user.username or 'Скрыт'} ({message.from_user.first_name})\n"
+        f"🆔 <b>ID клиента:</b> <code>{message.from_user.id}</code>\n"
+        f"👇 <b>Содержимое заявки:</b> 👇"
     )
 
     try:
-        bot.send_message(
-            CHANNEL_ID,
-            post_text,
-            parse_mode="HTML",
-            disable_web_page_preview=True,
-        )
-
+        bot.send_message(CHANNEL_ID, user_info, parse_mode="HTML")
+        bot.copy_message(CHANNEL_ID, message.chat.id, message.message_id)
+        
         bot.send_message(
             message.chat.id,
-            "✅ <b>Ваша заявка успешно опубликована в нашем канале!</b>\n\n"
-            "Ожидайте откликов, скоро с вами свяжутся. Спасибо!",
+            "✅ <b>Отлично!</b> Ваша заявка успешно отправлена.\nСкоро мы с вами свяжемся!",
             parse_mode="HTML",
             reply_markup=get_main_keyboard(),
         )
     except Exception as e:
         bot.send_message(
             message.chat.id,
-            f"❌ <b>Ошибка отправки в канал!</b>\nУбедитесь, что бот добавлен в администраторы канала @kotostroy_zayvki.\n\n<code>Детали: {e}</code>",
-            parse_mode="HTML",
+            f"❌ Произошла ошибка. Убедитесь, что бот является администратором канала.",
             reply_markup=get_main_keyboard(),
         )
+# 2. Нажата кнопка 
