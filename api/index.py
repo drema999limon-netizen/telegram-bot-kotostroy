@@ -56,7 +56,7 @@ def employer(message):
     # Шаблон отправляется отдельным сообщением для копирования в 1 клик
     template = (
         "<code>📝 ЗАЯВКА: НУЖЕН ИСПОЛНИТЕЛЬ\n"
-        "🏙 1. Город: \n"
+        "📍 1. Адрес: \n"
         "👷 2. Какой исполнитель нужен: \n"
         "📅 3. Какого числа: \n"
         "⏰ 4. В какое время: \n"
@@ -77,7 +77,7 @@ def worker(message):
     # Шаблон отправляется отдельным сообщением для копирования в 1 клик
     template = (
         "<code>💼 АНКЕТА: НУЖНА РАБОТА\n"
-        "🏙 1. Город: \n"
+        "📍 1. Адрес: \n"
         "🛠 2. Какую работу можете выполнить: \n"
         "🚀 3. С какого числа: \n"
         "⏱ 4. График работы: \n"
@@ -87,33 +87,3 @@ def worker(message):
         "ℹ️ 8. Доп. информация: </code>"
     )
     bot.send_message(message.chat.id, template, parse_mode="HTML")
-
-
-@bot.message_handler(content_types=['text', 'photo', 'video', 'document', 'voice', 'audio'])
-def handle_all_messages(message):
-    if message.text and ("Нужны исполнители" in message.text or "Нужна работа" in message.text or "/start" in message.text):
-        return
-
-    user_info = (
-        f"🔔 <b>НОВОЕ СООБЩЕНИЕ ИЗ БОТА</b> 🔔\n\n"
-        f"👤 <b>От кого:</b> @{message.from_user.username or 'Скрыт'} ({message.from_user.first_name})\n"
-        f"🆔 <b>ID клиента:</b> <code>{message.from_user.id}</code>\n"
-        f"👇 <b>Содержимое заявки:</b> 👇"
-    )
-
-    try:
-        bot.send_message(CHANNEL_ID, user_info, parse_mode="HTML")
-        bot.copy_message(CHANNEL_ID, message.chat.id, message.message_id)
-        
-        bot.send_message(
-            message.chat.id,
-            "✅ <b>Отлично!</b> Ваша заявка успешно отправлена.\nСкоро мы с вами свяжемся!",
-            parse_mode="HTML",
-            reply_markup=get_main_keyboard(),
-        )
-    except Exception as e:
-        bot.send_message(
-            message.chat.id,
-            f"❌ Произошла ошибка. Убедитесь, что бот является администратором канала.",
-            reply_markup=get_main_keyboard(),
-        )
