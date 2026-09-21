@@ -15,7 +15,7 @@ bot = telebot.TeleBot(BOT_TOKEN, threaded=False)
 app = Flask(__name__)
 
 
-# Главное меню
+# Главное меню с красивыми кнопками
 def get_main_keyboard():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     btn1 = types.KeyboardButton("👷 Нужны исполнители")
@@ -37,14 +37,17 @@ def catch_all(path):
     return "Bot is running!", 200
 
 
-# Старт бота (/start)
+# 1. Приветствие по команде /start
 @bot.message_handler(commands=["start"])
 def start(message):
+    first_name = message.from_user.first_name or "пользователь"
+
     welcome_text = (
-        f"👋 <b>Здравствуйте, {message.from_user.first_name}!</b>\n\n"
-        f"Добро пожаловать в сервис поиска работы и исполнителей <b>Kotostroy</b>! 🏗✨\n\n"
+        f"👋 Здравствуйте, {first_name} !\n\n"
+        f"Добро пожаловать в сервис поиска работы и исполнителей Kotostroy! 🏗✨\n\n"
         f"Пожалуйста, выберите нужный вариант ниже 👇"
     )
+
     bot.send_message(
         message.chat.id,
         welcome_text,
@@ -53,7 +56,7 @@ def start(message):
     )
 
 
-# 1. Шаблон заявки для Заказчика (Нужны исполнители)
+# 2. Шаблон для Заказчика ("Нужны исполнители")
 @bot.message_handler(
     func=lambda m: m.text
     in [
@@ -65,7 +68,7 @@ def start(message):
 )
 def employer(message):
     template = (
-        "📝 <b>Нажмите на текст ниже, чтобы скопировать его в 1 клик, заполните и отправьте ответным сообщением:</b>\n\n"
+        "📋 <b>Нажмите на серое поле ниже, чтобы скопировать шаблон в 1 клик:</b>\n\n"
         "<code>"
         "ЗАЯВКА: НУЖЕН ИСПОЛНИТЕЛЬ\n"
         "1. Адрес: \n"
@@ -77,7 +80,8 @@ def employer(message):
         "7. Ваш номер для связи: \n"
         "8. Как к вам обращаться: \n"
         "9. Дополнительная информация: "
-        "</code>"
+        "</code>\n\n"
+        "✏️ <i>Заполните скопированные данные и отправьте сообщением в этот чат!</i>"
     )
     bot.send_message(
         message.chat.id,
@@ -87,7 +91,7 @@ def employer(message):
     )
 
 
-# 2. Шаблон анкеты для Исполнителя (Нужна работа)
+# 3. Шаблон для Исполнителя ("Нужна работа")
 @bot.message_handler(
     func=lambda m: m.text
     in [
@@ -99,7 +103,7 @@ def employer(message):
 )
 def worker(message):
     template = (
-        "📝 <b>Нажмите на текст ниже, чтобы скопировать его в 1 клик, заполните и отправьте ответным сообщением:</b>\n\n"
+        "📋 <b>Нажмите на серое поле ниже, чтобы скопировать шаблон в 1 клик:</b>\n\n"
         "<code>"
         "АНКЕТА: НУЖНА РАБОТА\n"
         "1. Адрес: \n"
@@ -110,7 +114,8 @@ def worker(message):
         "6. Какой опыт: \n"
         "7. Ваш номер телефона для связи: \n"
         "8. Дополнительная информация: "
-        "</code>"
+        "</code>\n\n"
+        "✏️ <i>Заполните скопированные данные и отправьте сообщением в этот чат!</i>"
     )
     bot.send_message(
         message.chat.id,
@@ -120,7 +125,7 @@ def worker(message):
     )
 
 
-# 3. Пересылка любого заполненного сообщения/заявки в Канал
+# 4. Красивое оформление и пересылка заявки в Канал
 @bot.message_handler(func=lambda m: True)
 def handle_all_messages(message):
     user_name = message.from_user.first_name or "Пользователь"
@@ -130,19 +135,18 @@ def handle_all_messages(message):
         else "скрыт"
     )
 
+    # Красивая карточка публикации для Telegram-канала
     post_text = (
-        f"🔥 <b>НОВАЯ ЗАЯВКА В КАНАЛЕ!</b> 🔥\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"👤 <b>Отправитель:</b> <a href='tg://user?id={message.from_user.id}'>{user_name}</a> ({user_username})\n"
-        f"🆔 <b>ID:</b> <code>{message.from_user.id}</code>\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"📢 <b>НОВАЯ ЗАЯВКА В KOTOSTROY</b>\n"
+        f"➖➖━━━━━━━━━━━━━━━━➖➖\n\n"
         f"{message.text}\n\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"📩 <i>Чтобы связаться, нажмите на имя отправителя выше.</i>"
+        f"➖➖━━━━━━━━━━━━━━━━➖➖\n"
+        f"👤 <b>Отправитель:</b> <a href='tg://user?id={message.from_user.id}'>{user_name}</a> ({user_username})\n"
+        f"💬 <b>Связаться:</b> нажмите на имя отправителя выше"
     )
 
     try:
-        # Публикуем в канал
+        # Отправляем стильное сообщение в ваш канал
         bot.send_message(
             CHANNEL_ID,
             post_text,
@@ -150,17 +154,18 @@ def handle_all_messages(message):
             disable_web_page_preview=True,
         )
 
-        # Отвечаем пользователю
+        # Подтверждение пользователю в боте
         bot.send_message(
             message.chat.id,
-            "🚀 <b>Спасибо! Ваша заявка успешно отправлена в канал!</b>",
+            "✅ <b>Ваша заявка успешно опубликована в нашем канале!</b>\n\n"
+            "Ожидайте откликов, скоро с вами свяжутся. Спасибо!",
             parse_mode="HTML",
             reply_markup=get_main_keyboard(),
         )
     except Exception as e:
         bot.send_message(
             message.chat.id,
-            f"❌ <b>Ошибка отправки в канал!</b> Убедитесь, что бот является администратором канала @kotostroy_zayvki.\n\n<code>Детали: {e}</code>",
+            f"❌ <b>Ошибка отправки в канал!</b>\nПроверьте, добавлен ли бот в администраторы канала @kotostroy_zayvki.\n\n<code>Детали: {e}</code>",
             parse_mode="HTML",
             reply_markup=get_main_keyboard(),
         )
