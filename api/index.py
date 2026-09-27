@@ -4,57 +4,43 @@ import telebot
 from telebot import types
 
 # ==================== НАСТРОЙКИ ====================
-# Вставьте сюда свой НОВЫЙ токен после смены через @BotFather
-BOT_TOKEN = os.environ.get("BOT_TOKEN") or "ВСТАВЬТЕ_СЮДА_НОВЫЙ_ТОКЕН"
+BOT_TOKEN = os.environ.get("BOT_TOKEN") or "ВСТАВЬТЕ_СЮДА_ВАШ_ТОКЕН"
 CHANNEL_ID = os.environ.get("CHANNEL_ID") or "@kotostroy_zayvki"
 # ===================================================
 
 bot = telebot.TeleBot(BOT_TOKEN, threaded=False)
 app = Flask(__name__)
 
-# --- КЛАВИАТУРЫ ---
+
+# ==================== КЛАВИАТУРЫ ====================
 def get_main_keyboard():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.row("👔 Нужны исполнители", "🛠 Нужна работа")
     return markup
 
+
 def get_subscribe_keyboard():
     markup = types.InlineKeyboardMarkup()
-    # Формируем ссылку на канал (убираем @, если он есть в переменной)
-    channel_link = CHANNEL_ID.replace('@', '') 
+    channel_link = CHANNEL_ID.replace('@', '')
     markup.add(types.InlineKeyboardButton("🔗 Перейти в канал", url=f"https://t.me/{channel_link}"))
     markup.add(types.InlineKeyboardButton("✅ Я подписался", callback_data="check_sub"))
     return markup
 
-# --- ФУНКЦИЯ ПРОВЕРКИ ПОДПИСКИ ---
+
+# ==================== ПРОВЕРКА ПОДПИСКИ ====================
 def check_subscription(user_id):
     try:
-        # Бот проверяет статус пользователя в канале
         member = bot.get_chat_member(CHANNEL_ID, user_id)
-        # Если статус не 'left' (покинул) и не 'kicked' (забанен), значит он подписан
         return member.status in ['member', 'administrator', 'creator']
     except Exception as e:
-        print(f"Ошибка проверки подписки (возможно, бот не админ в канале): {e}")
-        return False 
+        print(f"[ОШИБКА ПРОВЕРКИ ПОДПИСКИ]: {e}")
+        return False
 
-# --- ОБРАБОТКА ВЕБХУКОВ FLASK ---
-@app.route("/", defaults={"path": ""}, methods=["POST", "GET"])
-@app.route("/<path:path>", methods=["POST", "GET"])
-def catch_all(path):
-    if request.method == "POST":
-        if request.headers.get("content-type") == "application/json":
-            json_string = request.get_data().decode("utf-8")
-            update = telebot.types.Update.de_json(json_string)
-            bot.process_new_updates([update])
-            return "OK", 200
-        return "Forbidden", 403
-    return "Bot is running!", 200
 
-# --- ОБРАБОТЧИК НАЖАТИЯ КНОПКИ "Я ПОДПИСАЛСЯ" ---
+# ==================== КНОПКА "Я ПОДПИСАЛСЯ" ====================
 @bot.callback_query_handler(func=lambda call: call.data == "check_sub")
 def handle_check_sub(call):
     if check_subscription(call.from_user.id):
-        # Если подписан, меняем текст сообщения
         bot.edit_message_text(
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
@@ -62,18 +48,17 @@ def handle_check_sub(call):
             parse_mode="HTML"
         )
     else:
-        # Если не подписан, показываем всплывающее уведомление
-        bot.answer_callback_query(call.id, "❌ Вы не подписались на канал!", show_alert=True)
+        bot.answer_callback_query(call.id, "❌ Вы ещё не подписались на канал!", show_alert=True)
 
-# --- ГЛАВНОЕ МЕНЮ ---
+
+# ==================== КОМАНДА /start ====================
 @bot.message_handler(commands=["start"])
 def start(message):
-    # ПРОВЕРКА ПОДПИСКИ
     if not check_subscription(message.from_user.id):
         bot.send_message(
-            message.chat.id, 
-            "⚠️ <b>Для использования бота необходимо подписаться на наш канал!</b>\n\nПожалуйста, подпишитесь и нажмите кнопку ниже.", 
-            parse_mode="HTML", 
+            message.chat.id,
+            "⚠️ <b>Для использования бота необходимо подписаться на наш канал!</b>\n\nПодпишитесь и нажмите кнопку ниже.",
+            parse_mode="HTML",
             reply_markup=get_subscribe_keyboard()
         )
         return
@@ -91,17 +76,22 @@ def start(message):
         reply_markup=get_main_keyboard(),
     )
 
-# --- СЦЕНАРИЙ: НУЖНЫ ИСПОЛНИТЕЛИ ---
+
+# ==================== СЦЕНАРИЙ: НУЖНЫ ИСПОЛНИТЕЛИ ====================
 @bot.message_handler(func=lambda m: m.text in ["👔 Нужны исполнители", "Нужны исполнители"])
 def employer(message):
-    # ПРОВЕРКА ПОДПИСКИ
     if not check_subscription(message.from_user.id):
-        bot.send_message(message.chat.id, "⚠️ <b>Сначала подпишитесь на канал!</b>", parse_mode="HTML", reply_markup=get_subscribe_keyboard())
+        bot.send_message(
+            message.chat.id,
+            "⚠️ <b>Сначала подпишитесь на канал!</b>",
+            parse_mode="HTML",
+            reply_markup=get_subscribe_keyboard()
+        )
         return
 
     instruction = "📝 <b>Нажмите на текст ниже, чтобы скопировать его в 1 клик, заполните и отправьте ответным сообщением:</b>"
     bot.send_message(message.chat.id, instruction, parse_mode="HTML")
-    
+
     template = (
         "<code>💼 ЗАЯВКА: НУЖЕН ИСПОЛНИТЕЛЬ\n"
         "📍 Адрес: \n"
@@ -116,17 +106,22 @@ def employer(message):
     )
     bot.send_message(message.chat.id, template, parse_mode="HTML")
 
-# --- СЦЕНАРИЙ: НУЖНА РАБОТА ---
+
+# ==================== СЦЕНАРИЙ: НУЖНА РАБОТА ====================
 @bot.message_handler(func=lambda m: m.text in ["🛠 Нужна работа", "Нужна работа"])
 def worker(message):
-    # ПРОВЕРКА ПОДПИСКИ
     if not check_subscription(message.from_user.id):
-        bot.send_message(message.chat.id, "⚠️ <b>Сначала подпишитесь на канал!</b>", parse_mode="HTML", reply_markup=get_subscribe_keyboard())
+        bot.send_message(
+            message.chat.id,
+            "⚠️ <b>Сначала подпишитесь на канал!</b>",
+            parse_mode="HTML",
+            reply_markup=get_subscribe_keyboard()
+        )
         return
 
     instruction = "📝 <b>Нажмите на текст ниже, чтобы скопировать его в 1 клик, заполните и отправьте ответным сообщением:</b>"
     bot.send_message(message.chat.id, instruction, parse_mode="HTML")
-    
+
     template = (
         "<code>💼 АНКЕТА: НУЖНА РАБОТА\n"
         "📍 Адрес: \n"
@@ -140,19 +135,18 @@ def worker(message):
     )
     bot.send_message(message.chat.id, template, parse_mode="HTML")
 
-# --- ОТПРАВКА ЗАЯВКИ В КАНАЛ ---
+
+# ==================== ОТПРАВКА ЗАЯВКИ В КАНАЛ ====================
 @bot.message_handler(content_types=['text', 'photo', 'video', 'document', 'voice', 'audio'])
 def handle_all_messages(message):
-    # Игнорируем нажатия кнопок меню и команду старт
     if message.text in ["👔 Нужны исполнители", "Нужны исполнители", "🛠 Нужна работа", "Нужна работа", "/start"]:
         return
 
-    # ПРОВЕРКА ПОДПИСКИ ПЕРЕД ОТПРАВКОЙ
     if not check_subscription(message.from_user.id):
         bot.send_message(
-            message.chat.id, 
-            "⚠️ <b>Для отправки заявки необходимо быть подписанным на наш канал!</b>", 
-            parse_mode="HTML", 
+            message.chat.id,
+            "⚠️ <b>Для отправки заявки необходимо быть подписанным на наш канал!</b>",
+            parse_mode="HTML",
             reply_markup=get_subscribe_keyboard()
         )
         return
@@ -167,7 +161,7 @@ def handle_all_messages(message):
     try:
         bot.send_message(CHANNEL_ID, user_info, parse_mode="HTML")
         bot.copy_message(CHANNEL_ID, message.chat.id, message.message_id)
-        
+
         bot.send_message(
             message.chat.id,
             "✅ <b>Отлично!</b> Ваша заявка успешно отправлена.\nСкоро мы с вами свяжемся!",
@@ -175,13 +169,23 @@ def handle_all_messages(message):
             reply_markup=get_main_keyboard(),
         )
     except Exception as e:
-        print(f"Ошибка отправки в канал: {e}")
+        print(f"[ОШИБКА ОТПРАВКИ В КАНАЛ]: {e}")
         bot.send_message(
             message.chat.id,
             "❌ Произошла ошибка при отправке. Убедитесь, что бот является администратором канала.",
             reply_markup=get_main_keyboard(),
         )
 
-# Запуск (для локального тестирования, на хостинге Flask запускается иначе, например через gunicorn)
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
+# ==================== ОБРАБОТКА ВЕБХУКА (ГЛАВНОЕ ДЛЯ VERCEL) ====================
+@app.route("/", defaults={"path": ""}, methods=["POST", "GET"])
+@app.route("/<path:path>", methods=["POST", "GET"])
+def catch_all(path):
+    if request.method == "POST":
+        if request.headers.get("content-type") == "application/json":
+            json_string = request.get_data().decode("utf-8")
+            update = telebot.types.Update.de_json(json_string)
+            bot.process_new_updates([update])
+            return "OK", 200
+        return "Forbidden", 403
+    return "Bot is running on Vercel!", 200
