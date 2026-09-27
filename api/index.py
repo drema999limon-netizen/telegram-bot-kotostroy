@@ -4,29 +4,39 @@ from flask import Flask, request
 import telebot
 from telebot import types
 
-# ==================== НАСТРОЙКИ ====================
-# Всё берётся из Vercel → Settings → Environment Variables
+# ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ ВПИШИТЕ СВОИ ДАННЫЕ ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
 
-# Токен бота (НИКОГДА не пишите его прямо в код!)
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "").strip()
+# ID канала, на который нужно подписаться (вида "-1001234567890")
+DEFAULT_SUBSCRIBE_CHANNEL_ID = ""
 
-# Ваш личный ID — сюда бот присылает заявки
-ADMIN_ID = os.environ.get("ADMIN_ID", "").strip()
-
-# ID вашего канала для обязательной подписки (вида -1001234567890)
-SUBSCRIBE_CHANNEL_ID = os.environ.get("SUBSCRIBE_CHANNEL_ID", "").strip()
+# ID закрытого канала, куда приходят заявки (вида "-1002345678901")
+DEFAULT_APPLICATIONS_CHANNEL_ID = ""
 
 # Ссылка на канал для кнопки «Перейти в канал»
-SUBSCRIBE_CHANNEL_LINK = (
-    os.environ.get("SUBSCRIBE_CHANNEL_LINK", "").strip()
-    or "https://t.me/+D_-gQTBazPc2ZTMy"
-)
+DEFAULT_SUBSCRIBE_CHANNEL_LINK = "https://t.me/+D_-gQTBazPc2ZTMy"
 
-# Тексты кнопок главного меню
+# ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
+
+# ==================== НАСТРОЙКИ (менять не нужно) ====================
+
+def env(name, default=""):
+    """Берёт значение из Vercel, а если его нет — значение из кода"""
+    return (os.environ.get(name, "") or "").strip() or default
+
+# Токен бота — ТОЛЬКО в Vercel → Environment Variables → BOT_TOKEN
+BOT_TOKEN = env("BOT_TOKEN")
+
+# Ваш личный ID — сюда придёт заявка, если в канал отправить не получилось
+ADMIN_ID = env("-1004411619465")
+
+SUBSCRIBE_CHANNEL_ID = env("SUBSCRIBE_CHANNEL_ID", DEFAULT_SUBSCRIBE_CHANNEL_ID)
+SUBSCRIBE_CHANNEL_LINK = env("SUBSCRIBE_CHANNEL_LINK", DEFAULT_SUBSCRIBE_CHANNEL_LINK)
+APPLICATIONS_CHANNEL_ID = env("APPLICATIONS_CHANNEL_ID", DEFAULT_APPLICATIONS_CHANNEL_ID)
+
 BTN_EMPLOYER = "👔 Нужны исполнители"
 BTN_WORKER = "🛠 Нужна работа"
 MENU_BUTTONS = [BTN_EMPLOYER, "Нужны исполнители", BTN_WORKER, "Нужна работа"]
-# ===================================================
 
 bot = telebot.TeleBot(BOT_TOKEN or "0:missing", threaded=False)
 app = Flask(__name__)
@@ -51,9 +61,8 @@ def get_subscribe_keyboard():
 
 def check_subscription(user_id):
     """True — пользователь подписан на канал"""
-    # Если ID канала не задан — проверку пропускаем, чтобы бот не сломался
     if not SUBSCRIBE_CHANNEL_ID:
-        print("ВНИМАНИЕ: не задан SUBSCRIBE_CHANNEL_ID — проверка подписки отключена")
+        print("ВНИМАНИЕ: не задан ID канала для подписки — проверка отключена")
         return True
     try:
         member = bot.get_chat_member(SUBSCRIBE_CHANNEL_ID, user_id)
@@ -95,11 +104,13 @@ def send_welcome(chat_id, user_name, after_subscribe=False):
 @app.route("/debug", methods=["GET"])
 def debug():
     """Диагностика: https://ваш-адрес.vercel.app/debug"""
-    lines = []
-    lines.append(f"BOT_TOKEN задан: {'да' if BOT_TOKEN else 'НЕТ'}")
-    lines.append(f"ADMIN_ID задан: {'да' if ADMIN_ID else 'НЕТ'}")
-    lines.append(f"SUBSCRIBE_CHANNEL_ID: {SUBSCRIBE_CHANNEL_ID or 'НЕ ЗАДАН'}")
-    lines.append(f"Ссылка на канал: {SUBSCRIBE_CHANNEL_LINK}")
+    lines = [
+        f"BOT_TOKEN задан: {'да' if BOT_TOKEN else 'НЕТ'}",
+        f"ADMIN_ID задан: {'да' if ADMIN_ID else 'НЕТ'}",
+        f"Канал для подписки: {SUBSCRIBE_CHANNEL_ID or 'НЕ ЗАДАН (проверка подписки отключена)'}",
+        f"Ссылка на канал: {SUBSCRIBE_CHANNEL_LINK}",
+        f"Канал для заявок: {APPLICATIONS_CHANNEL_ID or 'НЕ ЗАДАН (заявки идут в личку ADMIN_ID)'}",
+    ]
 
     if not BOT_TOKEN:
         return "<br>".join(lines)
@@ -122,16 +133,19 @@ def debug():
     if SUBSCRIBE_CHANNEL_ID:
         try:
             member = bot.get_chat_member(SUBSCRIBE_CHANNEL_ID, me.id)
-            lines.append(f"Статус бота в канале: {member.status}")
+            lines.append(f"Статус бота в канале для подписки: {member.status}")
         except Exception as e:
-            lines.append(f"Канал: ошибка — {e}")
+            lines.append(f"Канал для подписки: ошибка — {e}")
 
-    if ADMIN_ID:
+    if APPLICATIONS_CHANNEL_ID:
         try:
-            bot.get_chat(ADMIN_ID)
-            lines.append("Доступ к чату админа: есть")
+            member = bot.get_chat_member(APPLICATIONS_CHANNEL_ID, me.id)
+            can_post = getattr(member, "can_post_messages", None)
+            lines.append(f"Статус бота в канале для заявок: {member.status}")
+            if member.status == "administrator" and can_post is False:
+                lines.append("⚠️ У бота нет права «Публикация сообщений» в канале для заявок")
         except Exception as e:
-            lines.append(f"Доступ к чату админа: ошибка — {e} (напишите боту /start со своего аккаунта)")
+            lines.append(f"Канал для заявок: ошибка — {e}")
 
     return "<br>".join(lines)
 
@@ -257,7 +271,13 @@ def worker(message):
     bot.send_message(chat_id, template, parse_mode="HTML")
 
 
-# ==================== ЗАЯВКИ → ВАМ В ЛИЧКУ ====================
+# ==================== ЗАЯВКИ → В КАНАЛ ДЛЯ ЗАЯВОК ====================
+
+def deliver(target, user_info, from_chat_id, message_id):
+    """Отправляет шапку заявки и саму заявку в указанный чат"""
+    bot.send_message(target, user_info, parse_mode="HTML")
+    bot.copy_message(target, from_chat_id, message_id)
+
 
 @bot.message_handler(content_types=["text", "photo", "video", "document", "voice", "audio"])
 def handle_all_messages(message):
@@ -272,11 +292,6 @@ def handle_all_messages(message):
         send_subscribe_required(chat_id)
         return
 
-    if not ADMIN_ID:
-        print("ВНИМАНИЕ: не задан ADMIN_ID — некуда отправлять заявки")
-        bot.send_message(chat_id, "❌ Бот временно не принимает заявки. Попробуйте позже.")
-        return
-
     username = message.from_user.username
     first_name = html.escape(message.from_user.first_name or "")
     username_text = f"@{username}" if username else "Скрыт"
@@ -288,17 +303,42 @@ def handle_all_messages(message):
         f"👇 <b>Содержимое заявки:</b> 👇"
     )
 
+    target = APPLICATIONS_CHANNEL_ID or ADMIN_ID
+    if not target:
+        print("ВНИМАНИЕ: не задан ни канал для заявок, ни ADMIN_ID")
+        bot.send_message(chat_id, "❌ Бот временно не принимает заявки. Попробуйте позже.")
+        return
+
+    delivered = False
     try:
-        bot.send_message(ADMIN_ID, user_info, parse_mode="HTML")
-        bot.copy_message(ADMIN_ID, chat_id, message.message_id)
+        deliver(target, user_info, chat_id, message.message_id)
+        delivered = True
+    except Exception as e:
+        print(f"Ошибка отправки заявки в {target}: {e}")
+        # Запасной вариант: заявка вам в личку с причиной ошибки
+        if ADMIN_ID and str(target) != str(ADMIN_ID):
+            try:
+                bot.send_message(
+                    ADMIN_ID,
+                    f"⚠️ <b>Не удалось отправить заявку в канал</b> "
+                    f"<code>{html.escape(str(target))}</code>\n"
+                    f"Причина: <code>{html.escape(str(e))}</code>\n\n"
+                    f"Заявка ниже 👇",
+                    parse_mode="HTML",
+                )
+                deliver(ADMIN_ID, user_info, chat_id, message.message_id)
+                delivered = True
+            except Exception as e2:
+                print(f"Ошибка отправки заявки админу: {e2}")
+
+    if delivered:
         bot.send_message(
             chat_id,
             "✅ <b>Отлично!</b> Ваша заявка успешно отправлена.\nСкоро мы с вами свяжемся!",
             parse_mode="HTML",
             reply_markup=get_main_keyboard(),
         )
-    except Exception as e:
-        print(f"Ошибка отправки заявки админу: {e}")
+    else:
         bot.send_message(
             chat_id,
             "❌ Произошла ошибка при отправке заявки. Попробуйте позже.",
