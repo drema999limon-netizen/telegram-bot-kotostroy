@@ -7,10 +7,10 @@ from telebot import types
 # ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ ВПИШИТЕ СВОИ ДАННЫЕ ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
 
 # ID канала, на который нужно подписаться (вида "-1001234567890")
-DEFAULT_SUBSCRIBE_CHANNEL_ID = ""
+DEFAULT_SUBSCRIBE_CHANNEL_ID = "-1003999569031"
 
 # ID закрытого канала, куда приходят заявки (вида "-1002345678901")
-DEFAULT_APPLICATIONS_CHANNEL_ID = ""
+DEFAULT_APPLICATIONS_CHANNEL_ID = "-1004411619465"
 
 # Ссылка на канал для кнопки «Перейти в канал»
 DEFAULT_SUBSCRIBE_CHANNEL_LINK = "https://t.me/+D_-gQTBazPc2ZTMy"
