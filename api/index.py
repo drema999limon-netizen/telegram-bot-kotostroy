@@ -4,8 +4,13 @@ import telebot
 from telebot import types
 
 # ==================== НАСТРОЙКИ ====================
-BOT_TOKEN = os.environ.get("BOT_TOKEN") or "8643961661:AAH9Hd5ztWytx66vZF-aQZYQxYLxAjfkhos"
-CHANNEL_ID = os.environ.get("CHANNEL_ID") or "@kotostroy_zayvki"
+BOT_TOKEN = os.environ.get("BOT_TOKEN") or "8643961661:AAE255pkoQSiHHFu4aXSYyoACcZbSsGCNRw"
+
+# Числовой ID приватного канала (узнать через @username_to_id_bot)
+CHANNEL_ID = os.environ.get("CHANNEL_ID") or "-1001234567890"
+
+# Пригласительная ссылка на приватный канал
+CHANNEL_INVITE_LINK = os.environ.get("-1003999569031") or "https://t.me/+D_-gQTBazPc2ZTMy"
 # ===================================================
 
 bot = telebot.TeleBot(BOT_TOKEN, threaded=False)
@@ -20,8 +25,7 @@ def get_main_keyboard():
 
 def get_subscribe_keyboard():
     markup = types.InlineKeyboardMarkup()
-    channel_link = CHANNEL_ID.replace('@', '')
-    markup.add(types.InlineKeyboardButton("🔗 Перейти в канал", url=f"https://t.me/{channel_link}"))
+    markup.add(types.InlineKeyboardButton("🔗 Перейти в канал", url=CHANNEL_INVITE_LINK))
     markup.add(types.InlineKeyboardButton("✅ Я подписался", callback_data="check_sub"))
     return markup
 
