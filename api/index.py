@@ -4,7 +4,7 @@ import telebot
 from telebot import types
 
 # ==================== НАСТРОЙКИ ====================
-BOT_TOKEN = os.environ.get("BOT_TOKEN") or "8643961661:AAE255pkoQSiHHFu4aXSYyoACcZbSsGCNRw"
+BOT_TOKEN = os.environ.get("BOT_TOKEN") or "8643961661:AAGqRhj--mYcoaD83_UiWQMGaZTJ9gXkEbs"
 
 # Числовой ID приватного канала (узнать через @username_to_id_bot)
 CHANNEL_ID = os.environ.get("CHANNEL_ID") or "-1001234567890"
