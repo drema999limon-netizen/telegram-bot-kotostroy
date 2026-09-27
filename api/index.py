@@ -12,7 +12,6 @@ bot = telebot.TeleBot(BOT_TOKEN, threaded=False)
 app = Flask(__name__)
 
 
-# ==================== КЛАВИАТУРЫ ====================
 def get_main_keyboard():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.row("👔 Нужны исполнители", "🛠 Нужна работа")
@@ -27,7 +26,6 @@ def get_subscribe_keyboard():
     return markup
 
 
-# ==================== ПРОВЕРКА ПОДПИСКИ ====================
 def check_subscription(user_id):
     try:
         member = bot.get_chat_member(CHANNEL_ID, user_id)
@@ -37,7 +35,6 @@ def check_subscription(user_id):
         return False
 
 
-# ==================== КНОПКА "Я ПОДПИСАЛСЯ" ====================
 @bot.callback_query_handler(func=lambda call: call.data == "check_sub")
 def handle_check_sub(call):
     if check_subscription(call.from_user.id):
@@ -51,7 +48,6 @@ def handle_check_sub(call):
         bot.answer_callback_query(call.id, "❌ Вы ещё не подписались на канал!", show_alert=True)
 
 
-# ==================== КОМАНДА /start ====================
 @bot.message_handler(commands=["start"])
 def start(message):
     if not check_subscription(message.from_user.id):
@@ -77,7 +73,6 @@ def start(message):
     )
 
 
-# ==================== СЦЕНАРИЙ: НУЖНЫ ИСПОЛНИТЕЛИ ====================
 @bot.message_handler(func=lambda m: m.text in ["👔 Нужны исполнители", "Нужны исполнители"])
 def employer(message):
     if not check_subscription(message.from_user.id):
@@ -107,7 +102,6 @@ def employer(message):
     bot.send_message(message.chat.id, template, parse_mode="HTML")
 
 
-# ==================== СЦЕНАРИЙ: НУЖНА РАБОТА ====================
 @bot.message_handler(func=lambda m: m.text in ["🛠 Нужна работа", "Нужна работа"])
 def worker(message):
     if not check_subscription(message.from_user.id):
@@ -136,7 +130,6 @@ def worker(message):
     bot.send_message(message.chat.id, template, parse_mode="HTML")
 
 
-# ==================== ОТПРАВКА ЗАЯВКИ В КАНАЛ ====================
 @bot.message_handler(content_types=['text', 'photo', 'video', 'document', 'voice', 'audio'])
 def handle_all_messages(message):
     if message.text in ["👔 Нужны исполнители", "Нужны исполнители", "🛠 Нужна работа", "Нужна работа", "/start"]:
@@ -177,7 +170,6 @@ def handle_all_messages(message):
         )
 
 
-# ==================== ОБРАБОТКА ВЕБХУКА (ГЛАВНОЕ ДЛЯ VERCEL) ====================
 @app.route("/", defaults={"path": ""}, methods=["POST", "GET"])
 @app.route("/<path:path>", methods=["POST", "GET"])
 def catch_all(path):
